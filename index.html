@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TaeKwonDo - Train for your Belt</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <style>
+    /* =========================================================================
+       DESIGN TOKENS & RESET (Zero External Dependencies, Android-First)
+       ========================================================================= */
+    :root {
+      --bg-deep: #0b1021;
+      --bg-panel: #141c38;
+      --bg-panel-2: #1c274d;
+      --border-soft: #33447d;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --gold: #ffd53d;
+      --amber: #d97706;
+      --green: #22c55e;
+      --red: #ef4444;
+      --font-main: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at top, #1b264e 0%, #090d1b 75%);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    button {
+      font-family: var(--font-main);
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+
+    /* Decorative retro CRT scanline overlay (strictly non-interactive) */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0px,
+        rgba(255, 255, 255, 0) 2px,
+        rgba(0, 0, 0, 0.08) 3px,
+        rgba(0, 0, 0, 0.08) 4px
+      );
+    }
+
+    /* Main responsive mobile shell */
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: 100vh;
+      height: 100dvh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #101730 0%, #0b1021 100%);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.72);
+      overflow: hidden;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================================================================
+       SCREEN 1: TITLE & 2-COLUMN BELT SELECTION
+       ========================================================================= */
+    .title-screen {
+      padding: 12px 12px 18px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 10px;
+    }
+
+    .title-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .arcade-tag {
+      font-size: 10.5px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+
+    .hero-header {
+      text-align: center;
+      padding: 12px 10px 11px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #1f2b57 0%, #141c38 100%);
+      border: 2px solid #3c4f8f;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
+
+    .hero-kicker {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #0b1021;
+      background: linear-gradient(180deg, #ffe269 0%, #f5b700 100%);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: clamp(19px, 5.4vw, 26px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      line-height: 1.15;
+      text-transform: uppercase;
+      color: #ffffff;
+      text-shadow: 0 3px 0 #0a0e1d, 0 0 18px rgba(255, 213, 61, 0.35);
+    }
+
+    .hero-title span {
+      color: var(--gold);
+    }
+
+    .hero-subtitle {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.35;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      padding: 2px 2px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Responsive 2-column belt selection grid */
+    .belt-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      padding-bottom: 16px;
+    }
+
+    .belt-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+      padding: 11px 8px 10px;
+      border-radius: 14px;
+      border: 2px solid #35457d;
+      background: linear-gradient(180deg, #1d274d 0%, #131a35 100%);
+      color: var(--text-main);
+      text-align: center;
+      box-shadow: 0 4px 0 #080c1b;
+      transition: transform 0.08s ease, border-color 0.15s ease, filter 0.15s ease;
+    }
+
+    .belt-card:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #080c1b;
+    }
+
+    .belt-card:hover:not(:disabled) {
+      border-color: var(--gold);
+      filter: brightness(1.08);
+    }
+
+    .belt-card.locked {
+      opacity: 0.65;
+      cursor: not-allowed;
+      border-style: dashed;
+      border-color: #eab308;
+      background: linear-gradient(180deg, #161b2e 0%, #0d1120 100%);
+    }
+
+    /* Visual Martial Arts Belt Swatch */
+    .belt-swatch {
+      position: relative;
+      width: 68px;
+      height: 20px;
+      border-radius: 6px;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28), 0 3px 6px rgba(0, 0, 0, 0.45);
+      overflow: visible;
+    }
+
+    /* Horizontal black center stripe for High Red Belt */
+    .belt-swatch.striped::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 6px;
+      background: #111827;
+      z-index: 1;
+    }
+
+    /* Center belt knot */
+    .belt-swatch::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 24px;
+      border-radius: 4px;
+      background: inherit;
+      border: 2px solid rgba(0, 0, 0, 0.4);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+      z-index: 2;
+    }
+
+    .belt-swatch.striped::after {
+      background: linear-gradient(
+        180deg,
+        #dc2626 0%,
+        #dc2626 33%,
+        #111827 33%,
+        #111827 67%,
+        #dc2626 67%,
+        #dc2626 100%
+      );
+    }
+
+    .belt-name {
+      font-size: 13.5px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      line-height: 1.15;
+    }
+
+    .belt-meta {
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.25;
+    }
+
+    .belt-badge {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 0 #0d4f25;
+    }
+
+    .belt-card.locked .belt-badge {
+      background: #334155;
+      color: #fef08a;
+      box-shadow: none;
+    }
+
+    /* =========================================================================
+       SCREEN 2: BATTLE ARENA (Fits cleanly on portrait Android without scrolling)
+       ========================================================================= */
+    .battle-screen {
+      flex-direction: column;
+      height: 100%;
+      padding: 7px 9px 9px;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .mini-btn {
+      padding: 6px 11px;
+      border-radius: 10px;
+      border: 1.5px solid #3f508c;
+      background: #1a2448;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 2px 0 #0a0e1d;
+    }
+
+    .mini-btn:active {
+      transform: translateY(1px);
+    }
+
+    .combo-pill {
+      font-size: 11.5px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #17203f;
+      border: 1.5px solid #3b4b85;
+      color: #94a3b8;
+      transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .combo-pill.hot {
+      color: #0b1021;
+      background: linear-gradient(180deg, #ffe269 0%, #f59e0b 100%);
+      border-color: #fef08a;
+      transform: scale(1.06);
+    }
+
+    /* Street Fighter-inspired Health HUD */
+    .hud-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+      background: rgba(15, 22, 46, 0.94);
+      border: 1.5px solid #33447d;
+      border-radius: 12px;
+      padding: 6px 8px;
+    }
+
+    .fighter-hud {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .fighter-hud.right {
+      text-align: right;
+    }
+
+    .hud-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .fighter-hud.right .hud-name-row {
+      flex-direction: row-reverse;
+    }
+
+    .hud-belt-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 9.5px;
+      font-weight: 900;
+      border: 1px solid rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+    }
+
+    .hud-hp-num {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+
+    .hp-track {
+      width: 100%;
+      height: 13px;
+      background: #090d1c;
+      border: 2px solid #cbd5e1;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      height: 100%;
+      width: 100%;
+      transition: width 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hp-fill.player {
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+    }
+
+    .hp-fill.opponent {
+      margin-left: auto;
+      background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+    }
+
+    .ko-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: #0b1021;
+      background: linear-gradient(180deg, #ffe269 0%, #f59e0b 100%);
+      border: 2px solid #fef08a;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Arena Canvas Container */
+    .arena-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 165px;
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid #3c4f8f;
+      background: #141c38;
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
+    }
+
+    #arenaCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Prompt Banner */
+    .prompt-box {
+      flex-shrink: 0;
+      background: linear-gradient(180deg, #1d2852 0%, #141c3a 100%);
+      border: 2px solid #4559a0;
+      border-radius: 13px;
+      padding: 7px 10px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .prompt-kicker {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+
+    .prompt-move {
+      margin-top: 2px;
+      font-size: clamp(12.5px, 3.6vw, 18.5px);
+      font-weight: 900;
+      line-height: 1.18;
+      color: var(--gold);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+
+    /* 2x2 Multiple Choice Korean Term Buttons */
+    .choices-grid {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .choice-btn {
+      min-height: 58px;
+      padding: 7px 6px;
+      border-radius: 12px;
+      border: 2px solid #4a5ca0;
+      background: linear-gradient(180deg, #273469 0%, #1a234a 100%);
+      color: #ffffff;
+      font-size: clamp(10.5px, 2.85vw, 14px);
+      font-weight: 800;
+      line-height: 1.18;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: normal;
+      box-shadow: 0 4px 0 #0a0f24;
+      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .choice-btn.long-text {
+      font-size: clamp(9.5px, 2.45vw, 12.2px);
+    }
+
+    .choice-btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #0a0f24;
+    }
+
+    .choice-btn.correct {
+      background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+      border-color: #86efac;
+      color: #ffffff;
+      box-shadow: 0 4px 0 #0c4a23;
+    }
+
+    .choice-btn.wrong {
+      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+      border-color: #fca5a5;
+      color: #ffffff;
+      box-shadow: 0 4px 0 #6b1111;
+    }
+
+    .choice-btn:disabled {
+      cursor: default;
+    }
+
+    /* =========================================================================
+       SCREEN 3: END-OF-MATCH VICTORY / DEFEAT REVIEW
+       ========================================================================= */
+    .result-screen {
+      padding: 16px 14px 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 12px;
+    }
+
+    .result-banner {
+      text-align: center;
+      padding: 16px 12px;
+      border-radius: 16px;
+      border: 2px solid #4559a0;
+      background: linear-gradient(180deg, #1f2b57 0%, #131a35 100%);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
+
+    .result-banner.victory {
+      border-color: #facc15;
+      background: linear-gradient(180deg, #2b2957 0%, #151b38 100%);
+    }
+
+    .result-banner.defeat {
+      border-color: #ef4444;
+      background: linear-gradient(180deg, #3b1929 0%, #17152b 100%);
+    }
+
+    .result-title {
+      margin: 0;
+      font-size: clamp(26px, 7.5vw, 34px);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.65);
+    }
+
+    .result-banner.victory .result-title {
+      color: var(--gold);
+    }
+
+    .result-banner.defeat .result-title {
+      color: #f87171;
+    }
+
+    .result-sub {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .flawless-badge {
+      display: none;
+      margin-top: 10px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0b1021;
+      background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+      box-shadow: 0 3px 10px rgba(250, 204, 21, 0.4);
+    }
+
+    .flawless-badge.show {
+      display: inline-block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: #141c38;
+      border: 1.5px solid #33447d;
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    .stat-lbl {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .review-card {
+      background: #141c38;
+      border: 1.5px solid #33447d;
+      border-radius: 14px;
+      padding: 12px;
+      flex: 1 0 auto;
+    }
+
+    .review-heading {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+
+    .review-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .review-item {
+      background: #1c274d;
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .review-item .rev-en {
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .review-item .rev-kr {
+      color: var(--gold);
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .review-perfect {
+      padding: 12px 10px;
+      border-radius: 10px;
+      background: rgba(34, 197, 94, 0.14);
+      border: 1.5px solid rgba(34, 197, 94, 0.45);
+      color: #86efac;
+      font-size: 13.5px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .result-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      padding-bottom: 8px;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 13px;
+      border: 2px solid transparent;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #ffffff;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+      transition: transform 0.08s ease;
+    }
+
+    .action-btn:active {
+      transform: translateY(2px);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+      border-color: #86efac;
+    }
+
+    .action-btn.next-belt {
+      background: linear-gradient(180deg, #facc15 0%, #d97706 100%);
+      border-color: #fef08a;
+      color: #0b1021;
+    }
+
+    .action-btn.secondary {
+      background: linear-gradient(180deg, #2a376e 0%, #1b244b 100%);
+      border-color: #5064b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- =======================================================================
+         SCREEN 1: TITLE & BELT SELECTION
+         ======================================================================= -->
+    <section id="titleScreen" class="screen title-screen active" aria-label="Belt Selection">
+      <div class="title-topbar">
+        <span class="arcade-tag">16-Bit Dojang Edition</span>
+        <button type="button" id="btnMuteTitle" class="mini-btn">Sound: ON</button>
+      </div>
+
+      <header class="hero-header">
+        <div class="hero-kicker">Korean Terminology Dojo</div>
+        <h1 class="hero-title">TAEKWONDO - <span>TRAIN FOR YOUR BELT</span></h1>
+        <p class="hero-subtitle">Select the correct Korean term to strike! Miss and your rival strikes back.</p>
+      </header>
+
+      <div class="section-label">
+        <span>Select Your Belt</span>
+        <span>White &rarr; Black</span>
+      </div>
+
+      <div id="beltGrid" class="belt-grid"></div>
+    </section>
+
+    <!-- =======================================================================
+         SCREEN 2: COMBAT ARENA
+         ======================================================================= -->
+    <section id="battleScreen" class="screen battle-screen" aria-label="Combat Arena">
+      <div class="top-bar">
+        <button type="button" id="btnBackBelts" class="mini-btn">&larr; Belts</button>
+        <div id="comboPill" class="combo-pill">Combo: 0</div>
+        <button type="button" id="btnMuteBattle" class="mini-btn">Sound: ON</button>
+      </div>
+
+      <div class="hud-row">
+        <div class="fighter-hud left">
+          <div class="hud-name-row">
+            <span id="playerBeltTag" class="hud-belt-tag">WHITE</span>
+            <span id="playerHpText" class="hud-hp-num">5/5</span>
+          </div>
+          <div class="hp-track">
+            <div id="playerHpFill" class="hp-fill player"></div>
+          </div>
+        </div>
+
+        <div class="ko-badge">KO</div>
+
+        <div class="fighter-hud right">
+          <div class="hud-name-row">
+            <span class="hud-belt-tag" style="background:#111827;color:#f87171;border-color:#eab308;">RIVAL</span>
+            <span id="opponentHpText" class="hud-hp-num">5/5</span>
+          </div>
+          <div class="hp-track">
+            <div id="opponentHpFill" class="hp-fill opponent"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="arenaWrap" class="arena-wrap">
+        <canvas id="arenaCanvas"></canvas>
+      </div>
+
+      <div class="prompt-box">
+        <div id="promptKicker" class="prompt-kicker">Step 1 &bull; Take Your Guard</div>
+        <div id="promptMove" class="prompt-move">Fighting Stance</div>
+      </div>
+
+      <div id="choicesGrid" class="choices-grid"></div>
+    </section>
+
+    <!-- =======================================================================
+         SCREEN 3: END-OF-MATCH REVIEW
+         ======================================================================= -->
+    <section id="resultScreen" class="screen result-screen" aria-label="Match Review">
+      <div id="resultBanner" class="result-banner victory">
+        <h2 id="resultTitle" class="result-title">VICTORY!</h2>
+        <p id="resultSub" class="result-sub">You defeated the Black Dobok Rival!</p>
+        <div id="flawlessBadge" class="flawless-badge">Flawless Mastery!</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div id="statAccuracy" class="stat-val">100%</div>
+          <div class="stat-lbl">Accuracy</div>
+        </div>
+        <div class="stat-card">
+          <div id="statHits" class="stat-val">5</div>
+          <div class="stat-lbl">Hits Landed</div>
+        </div>
+        <div class="stat-card">
+          <div id="statCombo" class="stat-val">5</div>
+          <div class="stat-lbl">Best Combo</div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <h3 class="review-heading">Terms to Review</h3>
+        <div id="reviewContent"></div>
+      </div>
+
+      <div class="result-actions">
+        <button type="button" id="btnNextBelt" class="action-btn next-belt hidden">Next Belt</button>
+        <button type="button" id="btnRematch" class="action-btn primary">Rematch</button>
+        <button type="button" id="btnBeltSelect" class="action-btn secondary">Belt Select</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =======================================================================
+         1. BELT PROGRESSION & EXACT CUMULATIVE TERMINOLOGY (32 Terms Total)
+         ======================================================================= */
+      const BELTS = [
+        {
+          id: 'white',
+          name: 'White Belt',
+          shortName: 'WHITE',
+          color: '#f8fafc',
+          border: '#94a3b8',
+          textColor: '#0f172a',
+          stripeColor: null,
+          hitsToWin: 5,
+          playerHp: 5,
+          unlocked: true,
+          terms: [
+            { english: 'Fighting Stance', korean: 'Gyorugy Jazae', isStance: true, anim: 'stance' },
+            { english: 'Rising kick', korean: 'Podo Oligui', anim: 'rising' },
+            { english: 'Front snap kick', korean: 'Ap Chaggie', anim: 'frontSnap' },
+            { english: 'Roundhouse kick', korean: 'Pique Chaggie', anim: 'roundhouse' },
+            { english: 'Side kick', korean: 'Yop Chaggie', anim: 'side' }
+          ]
+        },
+        {
+          id: 'yellow',
+          name: 'Yellow Belt',
+          shortName: 'YELLOW',
+          color: '#facc15',
+          border: '#ca8a04',
+          textColor: '#0f172a',
+          stripeColor: null,
+          hitsToWin: 7,
+          playerHp: 6,
+          unlocked: true,
+          terms: [
+            { english: 'Axe kick', korean: 'Tchigo Chaggie', anim: 'axe' },
+            { english: 'High roundhouse kick', korean: 'Dolio Chaggie', anim: 'highRoundhouse' },
+            { english: 'Inside crescent kick', korean: 'An Chaggie', anim: 'insideCrescent' },
+            { english: 'Outside crescent kick', korean: 'Bacat Chaggie', anim: 'outsideCrescent' }
+          ]
+        },
+        {
+          id: 'orange',
+          name: 'Orange Belt',
+          shortName: 'ORANGE',
+          color: '#f97316',
+          border: '#c2410c',
+          textColor: '#ffffff',
+          stripeColor: null,
+          hitsToWin: 9,
+          playerHp: 7,
+          unlocked: true,
+          terms: [
+            { english: 'Push kick', korean: 'Mido Chaggie', anim: 'push' },
+            { english: 'Back kick', korean: 'Ti Chaggie', anim: 'back' },
+            { english: 'Spinning hook kick', korean: 'Ti Dolio Chaggie', anim: 'spinHook' },
+            { english: 'Jumping side kick', korean: 'Timio Yop Chaggie', anim: 'jumpSide' }
+          ]
+        },
+        {
+          id: 'green',
+          name: 'Green Belt',
+          shortName: 'GREEN',
+          color: '#22c55e',
+          border: '#15803d',
+          textColor: '#ffffff',
+          stripeColor: null,
+          hitsToWin: 11,
+          playerHp: 8,
+          unlocked: true,
+          terms: [
+            { english: 'Butterfly kick', korean: 'Naraban Chaggie', anim: 'butterfly' },
+            { english: 'Double roundhouse kick', korean: 'Dulebon Pique Chaggie', anim: 'doubleRoundhouse', doubleHit: true },
+            { english: 'Skipping front leg roundhouse kick', korean: 'Timio Ap Bal Pique Chaggie', anim: 'skipRoundhouse' },
+            { english: 'Jumping front kick', korean: 'Timio Ap Chaggie', anim: 'jumpFront' }
+          ]
+        },
+        {
+          id: 'purple',
+          name: 'Purple Belt',
+          shortName: 'PURPLE',
+          color: '#9333ea',
+          border: '#6b21a8',
+          textColor: '#ffffff',
+          stripeColor: null,
+          hitsToWin: 13,
+          playerHp: 8,
+          unlocked: true,
+          terms: [
+            { english: 'Skipping front leg side kick', korean: 'Timio Ap Bal Yop Chaggie', anim: 'skipSide' },
+            { english: 'Skipping front leg axe kick', korean: 'Timio Ap Bal Tchigo Chaggie', anim: 'skipAxe' },
+            { english: 'Skipping front leg hook kick', korean: 'Timio Ap Bal Hurio Chaggie', anim: 'skipHook' },
+            { english: 'Skipping front leg double roundhouse kick', korean: 'Timio Ap Bal Dulebon Pique Chaggie', anim: 'skipDoubleRoundhouse', doubleHit: true }
+          ]
+        },
+        {
+          id: 'blue',
+          name: 'Blue Belt',
+          shortName: 'BLUE',
+          color: '#2563eb',
+          border: '#1e3a8a',
+          textColor: '#ffffff',
+          stripeColor: null,
+          hitsToWin: 15,
+          playerHp: 9,
+          unlocked: true,
+          terms: [
+            { english: 'Low/high double roundhouse kick', korean: 'Dulebon Pique Dolio Chaggie', anim: 'lowHighDouble', doubleHit: true },
+            { english: 'Jumping back kick', korean: 'Timio Ti Chaggie', anim: 'jumpBack' },
+            { english: 'Jumping spinning hook kick', korean: 'Timio Ti Dolio Chaggie', anim: 'jumpSpinHook' }
+          ]
+        },
+        {
+          id: 'red',
+          name: 'Red Belt',
+          shortName: 'RED',
+          color: '#dc2626',
+          border: '#7f1d1d',
+          textColor: '#ffffff',
+          stripeColor: null,
+          hitsToWin: 17,
+          playerHp: 9,
+          unlocked: true,
+          terms: [
+            { english: 'Side kick - back kick combination', korean: 'Yop-Ti Chaggie', anim: 'sideBackCombo', doubleHit: true },
+            { english: 'Skipping front leg side kick - back kick combination', korean: 'Timio Ap Bal Yop-Ti Chaggie', anim: 'skipSideBackCombo', doubleHit: true },
+            { english: 'Skipping front leg low/high double roundhouse kick', korean: 'Timio Ap Bal Dulebon Pique Dolio Chaggie', anim: 'skipLowHighDouble', doubleHit: true }
+          ]
+        },
+        {
+          id: 'high_red',
+          name: 'High Red Belt',
+          shortName: 'HIGH RED',
+          color: '#dc2626',
+          border: '#111827',
+          textColor: '#ffffff',
+          stripeColor: '#111827',
+          hitsToWin: 19,
+          playerHp: 10,
+          unlocked: true,
+          terms: [
+            { english: '360\u00B0 Back kick', korean: 'Sam Beck Yougship-Ti Chaggie', anim: 'spin360Back' },
+            { english: 'Counter roundhouse kick', korean: 'Bada Chaggie', anim: 'counterRoundhouse' }
+          ]
+        },
+        {
+          id: 'brown',
+          name: 'Brown Belt',
+          shortName: 'BROWN',
+          color: '#78350f',
+          border: '#d97706',
+          textColor: '#fef3c7',
+          stripeColor: null,
+          hitsToWin: 21,
+          playerHp: 10,
+          unlocked: true,
+          terms: [
+            { english: '360\u00B0 Spinning hook kick', korean: 'Sam Beck Yougship-Hurio Chaggie', anim: 'spin360Hook' },
+            { english: 'Jumping front - axe kick combination', korean: 'Timio Ap-Tchigo Chaggie', anim: 'jumpFrontAxeCombo', doubleHit: true },
+            { english: 'Backwards butterfly kick', korean: 'Whojin Naraban Chaggie', anim: 'backwardsButterfly' }
+          ]
+        },
+        {
+          id: 'black',
+          name: 'Black Belt',
+          shortName: 'BLACK',
+          color: '#111827',
+          border: '#eab308',
+          textColor: '#eab308',
+          stripeColor: null,
+          hitsToWin: 23,
+          playerHp: 10,
+          unlocked: false,
+          terms: []
+        }
+      ];
+
+      function getCumulativeTerms(beltIndex) {
+        const list = [];
+        for (let i = 0; i <= beltIndex; i++) {
+          const b = BELTS[i];
+          for (let j = 0; j < b.terms.length; j++) {
+            list.push({
+              english: b.terms[j].english,
+              korean: b.terms[j].korean,
+              isStance: !!b.terms[j].isStance,
+              anim: b.terms[j].anim,
+              doubleHit: !!b.terms[j].doubleHit,
+              beltIndex: i
+            });
+          }
+        }
+        return list;
+      }
+
+      /* =======================================================================
+         2. CENTRALIZED TIMER MANAGER (Clean resets across screens & rematches)
+         ======================================================================= */
+      let activeTimers = [];
+
+      function schedule(fn, ms) {
+        const id = window.setTimeout(function () {
+          activeTimers = activeTimers.filter(function (t) { return t !== id; });
+          fn();
+        }, ms);
+        activeTimers.push(id);
+        return id;
+      }
+
+      function clearAllTimers() {
+        for (let i = 0; i < activeTimers.length; i++) {
+          window.clearTimeout(activeTimers[i]);
+        }
+        activeTimers = [];
+      }
+
+      /* =======================================================================
+         3. SAFE WEB AUDIO API SYNTHESIZER (Zero External Audio Files)
+         ======================================================================= */
+      const SoundFX = {
+        ctx: null,
+        muted: false,
+        ensureCtx: function () {
+          if (this.muted) return null;
+          try {
+            if (!this.ctx) {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (!AudioCtx) return null;
+              this.ctx = new AudioCtx();
+            }
+            if (this.ctx.state === 'suspended') {
+              this.ctx.resume();
+            }
+            return this.ctx;
+          } catch (e) {
+            return null;
+          }
+        },
+        tone: function (freq, endFreq, dur, type, vol, delay) {
+          try {
+            const ctx = this.ensureCtx();
+            if (!ctx) return;
+            const now = ctx.currentTime + (delay || 0);
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type || 'square';
+            osc.frequency.setValueAtTime(freq, now);
+            if (endFreq && endFreq !== freq) {
+              osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + dur);
+            }
+            gain.gain.setValueAtTime(vol || 0.14, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + dur + 0.02);
+          } catch (e) {
+            /* Safe fallback */
+          }
+        },
+        stance: function () {
+          this.tone(260, 520, 0.14, 'triangle', 0.16, 0);
+          this.tone(520, 780, 0.18, 'sine', 0.14, 0.08);
+        },
+        whoosh: function () {
+          this.tone(420, 120, 0.14, 'sawtooth', 0.08, 0);
+        },
+        counterFlash: function () {
+          this.tone(720, 1180, 0.12, 'sine', 0.13, 0);
+        },
+        hit: function () {
+          this.tone(175, 48, 0.15, 'square', 0.22, 0);
+          this.tone(360, 140, 0.09, 'triangle', 0.14, 0.02);
+        },
+        doubleChime: function () {
+          this.tone(580, 880, 0.1, 'triangle', 0.15, 0);
+          this.tone(760, 1140, 0.11, 'sine', 0.13, 0.06);
+        },
+        hurt: function () {
+          this.tone(140, 55, 0.22, 'sawtooth', 0.2, 0);
+        },
+        victory: function () {
+          this.tone(523, 523, 0.12, 'square', 0.13, 0);
+          this.tone(659, 659, 0.12, 'square', 0.13, 0.13);
+          this.tone(784, 784, 0.12, 'square', 0.13, 0.26);
+          this.tone(1046, 1046, 0.28, 'square', 0.16, 0.39);
+        },
+        defeat: function () {
+          this.tone(330, 290, 0.18, 'sawtooth', 0.12, 0);
+          this.tone(277, 230, 0.18, 'sawtooth', 0.12, 0.2);
+          this.tone(220, 150, 0.32, 'sawtooth', 0.14, 0.4);
+        }
+      };
+
+      /* =======================================================================
+         4. DOM REFERENCES
+         ======================================================================= */
+      const titleScreen = document.getElementById('titleScreen');
+      const battleScreen = document.getElementById('battleScreen');
+      const resultScreen = document.getElementById('resultScreen');
+      const beltGrid = document.getElementById('beltGrid');
+
+      const btnMuteTitle = document.getElementById('btnMuteTitle');
+      const btnMuteBattle = document.getElementById('btnMuteBattle');
+      const btnBackBelts = document.getElementById('btnBackBelts');
+      const comboPill = document.getElementById('comboPill');
+      const playerBeltTag = document.getElementById('playerBeltTag');
+      const playerHpText = document.getElementById('playerHpText');
+      const opponentHpText = document.getElementById('opponentHpText');
+      const playerHpFill = document.getElementById('playerHpFill');
+      const opponentHpFill = document.getElementById('opponentHpFill');
+      const arenaWrap = document.getElementById('arenaWrap');
+      const canvas = document.getElementById('arenaCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const promptKicker = document.getElementById('promptKicker');
+      const promptMove = document.getElementById('promptMove');
+      const choicesGrid = document.getElementById('choicesGrid');
+
+      const resultBanner = document.getElementById('resultBanner');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultSub = document.getElementById('resultSub');
+      const flawlessBadge = document.getElementById('flawlessBadge');
+      const statAccuracy = document.getElementById('statAccuracy');
+      const statHits = document.getElementById('statHits');
+      const statCombo = document.getElementById('statCombo');
+      const reviewContent = document.getElementById('reviewContent');
+      const btnNextBelt = document.getElementById('btnNextBelt');
+      const btnRematch = document.getElementById('btnRematch');
+      const btnBeltSelect = document.getElementById('btnBeltSelect');
+
+      /* =======================================================================
+         5. GAME STATE
+         ======================================================================= */
+      const game = {
+        screen: 'title',
+        beltIndex: 0,
+        pool: [],
+        kickPool: [],
+        currentBeltKicks: [],
+        lowerBeltKicks: [],
+        stanceLocked: false,
+        currentTerm: null,
+        lastKickEnglish: '',
+        lockedInput: false,
+        playerMaxHp: 5,
+        playerHp: 5,
+        opponentMaxHp: 5,
+        opponentHp: 5,
+        hitsLanded: 0,
+        totalAnswered: 0,
+        totalCorrect: 0,
+        combo: 0,
+        bestCombo: 0,
+        missedMap: {}
+      };
+
+      /* =======================================================================
+         6. ARENA CANVAS STATE & 60FPS ANIMATION ENGINE
+         ======================================================================= */
+      const arena = {
+        w: 360,
+        h: 220,
+        elapsed: 0,
+        shakeTime: 0,
+        shakeMag: 0,
+        auraTime: 0,
+        counterAuraTime: 0,
+        sparks: [],
+        popups: [],
+        player: {
+          side: 'left',
+          baseX: 0.27,
+          state: 'neutral',
+          stateTime: 0,
+          stateDuration: 0.8,
+          flashTime: 0,
+          beltColor: '#f8fafc',
+          beltBorder: '#94a3b8',
+          stripeColor: null
+        },
+        opponent: {
+          side: 'right',
+          baseX: 0.73,
+          state: 'idle',
+          stateTime: 0,
+          stateDuration: 0.8,
+          flashTime: 0,
+          beltColor: '#111827',
+          beltBorder: '#eab308',
+          stripeColor: null
+        }
+      };
+
+      function resizeCanvas() {
+        try {
+          const rect = arenaWrap.getBoundingClientRect();
+          const w = Math.max(280, Math.floor(rect.width || 360));
+          const h = Math.max(165, Math.floor(rect.height || 220));
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          arena.w = w;
+          arena.h = h;
+          canvas.width = Math.floor(w * dpr);
+          canvas.height = Math.floor(h * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        } catch (e) {
+          /* Safe non-zero fallback */
+        }
+      }
+
+      function triggerShake(mag, dur) {
+        arena.shakeMag = Math.max(arena.shakeMag, mag);
+        arena.shakeTime = Math.max(arena.shakeTime, dur);
+      }
+
+      function spawnSparks(nx, ny, color, count) {
+        const cx = nx * arena.w;
+        const cy = ny * arena.h;
+        const n = count || 15;
+        for (let i = 0; i < n; i++) {
+          const ang = (Math.PI * 2 * i) / n + (Math.random() - 0.5) * 0.35;
+          const spd = 75 + Math.random() * 155;
+          arena.sparks.push({
+            x: cx,
+            y: cy,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: 2.5 + Math.random() * 3.8,
+            color: i % 3 === 0 ? '#ffffff' : color,
+            life: 0.35 + Math.random() * 0.22,
+            maxLife: 0.57
+          });
+        }
+      }
+
+      function spawnPopup(title, color, subtitle) {
+        arena.popups.push({
+          title: title,
+          subtitle: subtitle || '',
+          color: color,
+          yOffset: 0,
+          life: 1.05,
+          maxLife: 1.05
+        });
+      }
+
+      function triggerStanceAnimation() {
+        arena.player.state = 'stance';
+        arena.player.stateTime = 0;
+        arena.player.stateDuration = 0.72;
+        arena.auraTime = 0.72;
+        SoundFX.stance();
+        spawnPopup('FIGHT!', '#38bdf8', 'Gyorugy Jazae');
+      }
+
+      function triggerKickAnimation(attackerSide, animName, doubleHit, callout, onImpact) {
+        const attacker = attackerSide === 'left' ? arena.player : arena.opponent;
+        const defender = attackerSide === 'left' ? arena.opponent : arena.player;
+
+        attacker.state = animName;
+        attacker.stateTime = 0;
+        const isCounter = animName === 'counterRoundhouse';
+        const isBigSpin = animName === 'spin360Back' || animName === 'spin360Hook' || animName === 'backwardsButterfly';
+        attacker.stateDuration = doubleHit ? 0.98 : (isCounter || isBigSpin ? 0.92 : 0.78);
+
+        if (isCounter) {
+          arena.counterAuraTime = 0.34;
+          SoundFX.counterFlash();
+          schedule(function () { SoundFX.whoosh(); }, 180);
+        } else {
+          SoundFX.whoosh();
+        }
+
+        if (doubleHit) {
+          schedule(function () {
+            SoundFX.doubleChime();
+            defender.flashTime = 0.14;
+            triggerShake(5.5, 0.14);
+            const sx = defender.side === 'right' ? 0.62 : 0.38;
+            let sy = 0.52;
+            if (animName === 'lowHighDouble' || animName === 'skipLowHighDouble') sy = 0.60;
+            if (animName === 'jumpFrontAxeCombo') sy = 0.48;
+            const part1Color = animName === 'jumpFrontAxeCombo'
+              ? '#f59e0b'
+              : (attackerSide === 'left' ? attacker.beltColor : '#ef4444');
+            spawnSparks(sx, sy, part1Color, 14);
+          }, 240);
+        }
+
+        const impactMs = doubleHit ? 440 : (isCounter || isBigSpin ? 385 : 285);
+        schedule(function () {
+          if (attackerSide === 'left') {
+            SoundFX.hit();
+          } else {
+            SoundFX.hurt();
+          }
+          defender.state = 'hit';
+          defender.stateTime = 0;
+          defender.stateDuration = 0.42;
+          defender.flashTime = 0.24;
+          triggerShake(doubleHit || isBigSpin ? 11.5 : 7, 0.24);
+
+          const isHigh = (
+            animName === 'rising' || animName === 'axe' || animName === 'highRoundhouse' ||
+            animName === 'insideCrescent' || animName === 'outsideCrescent' ||
+            animName === 'spinHook' || animName === 'jumpSpinHook' || animName === 'spin360Hook' ||
+            animName === 'skipAxe' || animName === 'skipHook' ||
+            animName === 'lowHighDouble' || animName === 'skipLowHighDouble' ||
+            animName === 'jumpFrontAxeCombo'
+          );
+          const sx = defender.side === 'right' ? 0.63 : 0.37;
+          const sy = isHigh ? 0.37 : 0.52;
+
+          let sparkColor = attackerSide === 'left' ? '#ffd53d' : '#ef4444';
+          if (animName === 'spin360Hook' || animName === 'jumpFrontAxeCombo' || animName === 'backwardsButterfly') {
+            sparkColor = '#f59e0b';
+          }
+          spawnSparks(sx, sy, sparkColor, isBigSpin || doubleHit ? 20 : 15);
+
+          let bannerTxt = attackerSide === 'left' ? 'HIT!' : 'OUCH!';
+          let bannerCol = attackerSide === 'left' ? '#4ade80' : '#f87171';
+          if (attackerSide === 'left' && isCounter) {
+            bannerTxt = 'COUNTER!';
+            bannerCol = '#ffd53d';
+          } else if (attackerSide === 'left' && (animName === 'spin360Hook' || animName === 'jumpFrontAxeCombo' || animName === 'backwardsButterfly')) {
+            bannerTxt = 'CRITICAL!';
+            bannerCol = '#f59e0b';
+          }
+          spawnPopup(bannerTxt, bannerCol, callout);
+
+          if (typeof onImpact === 'function') onImpact();
+        }, impactMs);
+      }
+
+      /* =======================================================================
+         7. DOJANG BACKDROP & ARTICULATED 60FPS FIGHTER RENDERING
+         ======================================================================= */
+      function drawDojang(w, h) {
+        const wallH = Math.floor(h * 0.64);
+        const wallGrad = ctx.createLinearGradient(0, 0, 0, wallH);
+        wallGrad.addColorStop(0, '#1c2444');
+        wallGrad.addColorStop(1, '#2b355e');
+        ctx.fillStyle = wallGrad;
+        ctx.fillRect(0, 0, w, wallH);
+
+        // Shoji screen panels
+        const panelW = w * 0.24;
+        const panelH = wallH * 0.68;
+        const panelY = wallH * 0.14;
+        const panels = [w * 0.05, w - w * 0.05 - panelW];
+        for (let p = 0; p < panels.length; p++) {
+          const px = panels[p];
+          ctx.fillStyle = 'rgba(248, 241, 218, 0.12)';
+          ctx.fillRect(px, panelY, panelW, panelH);
+          ctx.strokeStyle = 'rgba(203, 174, 122, 0.35)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px, panelY, panelW, panelH);
+          ctx.lineWidth = 1;
+          for (let r = 1; r <= 3; r++) {
+            const ly = panelY + (panelH / 4) * r;
+            ctx.beginPath();
+            ctx.moveTo(px, ly);
+            ctx.lineTo(px + panelW, ly);
+            ctx.stroke();
+          }
+          for (let c = 1; c <= 2; c++) {
+            const lx = px + (panelW / 3) * c;
+            ctx.beginPath();
+            ctx.moveTo(lx, panelY);
+            ctx.lineTo(lx, panelY + panelH);
+            ctx.stroke();
+          }
+        }
+
+        // Center Korean Taegeuk emblem
+        const tX = w * 0.5;
+        const tY = wallH * 0.44;
+        const tR = Math.min(w, h) * 0.145;
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(tX, tY, tR, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath();
+        ctx.arc(tX, tY, tR, 0, Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(tX - tR * 0.5, tY, tR * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath();
+        ctx.arc(tX + tR * 0.5, tY, tR * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffd53d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(tX, tY, tR + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Wooden baseboard trim
+        ctx.fillStyle = '#4a2e19';
+        ctx.fillRect(0, wallH - 5, w, 7);
+
+        // Warm wooden dojang floor
+        const floorGrad = ctx.createLinearGradient(0, wallH, 0, h);
+        floorGrad.addColorStop(0, '#9c6637');
+        floorGrad.addColorStop(0.5, '#b87a43');
+        floorGrad.addColorStop(1, '#7a4b24');
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(0, wallH, w, h - wallH);
+
+        ctx.strokeStyle = 'rgba(54, 28, 10, 0.35)';
+        ctx.lineWidth = 1.5;
+        for (let i = -3; i <= 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(w * 0.5 + i * (w * 0.11), wallH);
+          ctx.lineTo(w * 0.5 + i * (w * 0.24), h);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(0, wallH + (h - wallH) * 0.45);
+        ctx.lineTo(w, wallH + (h - wallH) * 0.45);
+        ctx.stroke();
+      }
+
+      function drawLimb(x1, y1, x2, y2, width, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      function drawFighter(f, w, h) {
+        const isWhite = f.side === 'left';
+        const dir = isWhite ? 1 : -1;
+        const scale = Math.min(w / 390, h / 235) * 0.96;
+        const groundY = h * 0.85;
+
+        const p = Math.min(1, f.stateTime / Math.max(0.01, f.stateDuration));
+        const st = f.state;
+
+        let xNorm = f.baseX;
+        let bobY = 0;
+        let airLiftY = 0;
+        let spinScaleX = 1;
+        let recoilX = 0;
+
+        const isAttack = (st !== 'neutral' && st !== 'idle' && st !== 'stance' && st !== 'hit');
+        const isSkip = st.indexOf('skip') === 0;
+        const isJump = (
+          st.indexOf('jump') === 0 ||
+          st === 'butterfly' ||
+          st === 'backwardsButterfly' ||
+          st === 'spin360Back' ||
+          st === 'spin360Hook'
+        );
+
+        if (st === 'neutral') {
+          bobY = Math.sin(arena.elapsed * 2.8) * 1.5;
+        } else if (st === 'idle') {
+          bobY = -Math.abs(Math.sin(arena.elapsed * 6.0 + (isWhite ? 0 : 1.5))) * 4.5;
+        } else if (st === 'stance') {
+          bobY = Math.sin(p * Math.PI) * 8;
+        } else if (st === 'hit') {
+          recoilX = -dir * Math.sin(p * Math.PI) * 18;
+        } else if (st === 'counterRoundhouse') {
+          if (p < 0.30) {
+            const bp = Math.sin((p / 0.30) * Math.PI * 0.5);
+            xNorm = f.baseX - dir * 0.08 * bp;
+          } else {
+            const fp = (p - 0.30) / 0.70;
+            const lunge = fp < 0.42 ? (fp / 0.42) : Math.max(0, 1 - (fp - 0.42) / 0.58);
+            xNorm = (f.baseX - dir * 0.08) + dir * 0.34 * Math.sin(lunge * Math.PI * 0.5);
+          }
+        } else if (isAttack) {
+          const dash = p < 0.45 ? (p / 0.45) : Math.max(0, 1 - (p - 0.45) / 0.55);
+          const dashAmt = (isJump || isSkip) ? 0.29 : 0.24;
+          xNorm = f.baseX + dir * dashAmt * Math.sin(dash * Math.PI * 0.5);
+
+          if (isJump) {
+            const peak = (st === 'spin360Back' || st === 'spin360Hook' || st === 'backwardsButterfly' || st === 'jumpFrontAxeCombo') ? 62 : 52;
+            airLiftY = -Math.sin(Math.min(1, p / 0.92) * Math.PI) * peak;
+          }
+          if (isSkip) {
+            airLiftY = p < 0.30 ? -Math.sin((p / 0.30) * Math.PI) * 24 : 0;
+          }
+
+          if (st === 'back' || st === 'jumpBack') {
+            const tp = Math.sin(Math.min(1, p / 0.88) * Math.PI);
+            spinScaleX = 1 - 2 * Math.min(1, tp * 1.45);
+          } else if (st === 'spin360Back') {
+            if (p < 0.42) {
+              spinScaleX = Math.cos((p / 0.42) * Math.PI * 2);
+            } else {
+              const tp = Math.sin(Math.min(1, (p - 0.42) / 0.52) * Math.PI);
+              spinScaleX = 1 - 2 * Math.min(1, tp * 1.45);
+            }
+          } else if (st === 'spin360Hook') {
+            // High airborne 360° spin finishing into a forward-facing sweeping hook
+            spinScaleX = Math.cos(Math.min(1, p / 0.72) * Math.PI * 2);
+          } else if (st === 'backwardsButterfly') {
+            // Reverse-direction airborne 360° spin (negative phase rotation while leaping forward)
+            spinScaleX = Math.cos(-Math.min(1, p / 0.82) * Math.PI * 2 - Math.PI * 0.25);
+          } else if (st === 'spinHook' || st === 'jumpSpinHook' || st === 'butterfly') {
+            spinScaleX = Math.cos(Math.min(1, p / 0.78) * Math.PI * 2);
+          } else if (st === 'sideBackCombo' && p >= 0.44) {
+            const tp = Math.sin(Math.min(1, (p - 0.44) / 0.52) * Math.PI);
+            spinScaleX = 1 - 2 * Math.min(1, tp * 1.45);
+          } else if (st === 'skipSideBackCombo' && p >= 0.52) {
+            const tp = Math.sin(Math.min(1, (p - 0.52) / 0.44) * Math.PI);
+            spinScaleX = 1 - 2 * Math.min(1, tp * 1.45);
+          }
+
+          if (Math.abs(spinScaleX) < 0.22) {
+            spinScaleX = spinScaleX >= 0 ? 0.22 : -0.22;
+          }
+        }
+
+        const rootX = xNorm * w + recoilX;
+        const rootY = groundY + bobY + airLiftY;
+
+        // Ground shadow shrinks smoothly with air height
+        const shadowScale = Math.max(0.4, 1 + airLiftY / 110);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
+        ctx.beginPath();
+        ctx.ellipse(rootX, groundY + 4, 30 * scale * shadowScale, 7.5 * scale * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Blue focus aura on Fighting Stance
+        if (isWhite && arena.auraTime > 0) {
+          const a = arena.auraTime / 0.72;
+          ctx.save();
+          ctx.strokeStyle = 'rgba(56, 189, 248, ' + (a * 0.85) + ')';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.ellipse(rootX, groundY - 46 * scale, (36 + (1 - a) * 28) * scale, (56 + (1 - a) * 20) * scale, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Silver-and-gold counter flash aura on Counter roundhouse kick
+        if (isWhite && arena.counterAuraTime > 0) {
+          const ca = arena.counterAuraTime / 0.34;
+          ctx.save();
+          ctx.strokeStyle = 'rgba(226, 232, 240, ' + (ca * 0.9) + ')';
+          ctx.lineWidth = 4.5;
+          ctx.beginPath();
+          ctx.ellipse(rootX, rootY - 52 * scale, (34 + (1 - ca) * 26) * scale, (54 + (1 - ca) * 18) * scale, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 213, 61, ' + (ca * 0.85) + ')';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.ellipse(rootX, rootY - 52 * scale, (24 + (1 - ca) * 32) * scale, (44 + (1 - ca) * 22) * scale, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.translate(rootX, rootY);
+        ctx.scale(dir * spinScaleX * scale, scale);
+
+        // Default martial arts stance joints
+        const hipX = 0, hipY = -52;
+        let torsoX = 2, torsoY = -98;
+        let backKneeX = -15, backKneeY = -26, backFootX = -22, backFootY = 0;
+        let frontKneeX = 16, frontKneeY = -26, frontFootX = 22, frontFootY = 0;
+        let backHandX = 14, backHandY = -74;
+        let frontHandX = 28, frontHandY = -82;
+
+        if (st === 'neutral') {
+          backFootX = -12; frontFootX = 12;
+          backHandX = -12; backHandY = -62;
+          frontHandX = 12; frontHandY = -62;
+        } else if (st === 'hit') {
+          const hp = Math.sin(p * Math.PI);
+          torsoX = -18 * hp;
+          torsoY = -94;
+          frontHandX = 16 - 10 * hp;
+          frontHandY = -90;
+        }
+
+        let trail = null;
+        const kp = isAttack ? Math.sin(Math.min(1, p / 0.90) * Math.PI) : 0;
+        const accentColor = isWhite ? (f.beltColor === '#f8fafc' ? '#38bdf8' : f.beltColor) : '#ef4444';
+
+        if (st === 'rising') {
+          torsoX = -14 * kp;
+          frontKneeX = 32 * kp + 16 * (1 - kp);
+          frontKneeY = -86 * kp - 26 * (1 - kp);
+          frontFootX = 52 * kp + 22 * (1 - kp);
+          frontFootY = -124 * kp;
+          if (kp > 0.25) trail = { kind: 'arc', cx: 8, cy: -54, r: 72, a1: -Math.PI * 0.58, a2: 0.15, color: accentColor };
+        } else if (st === 'frontSnap' || st === 'jumpFront') {
+          torsoX = -14 * kp;
+          frontKneeX = 36 * kp + 16 * (1 - kp);
+          frontKneeY = -64 * kp - 26 * (1 - kp);
+          frontFootX = 78 * kp + 22 * (1 - kp);
+          frontFootY = -68 * kp;
+          if (st === 'jumpFront') { backKneeX = -6; backKneeY = -36; backFootX = -14; backFootY = -16; }
+          if (kp > 0.25) trail = { kind: 'line', x1: 12, y1: -58, x2: frontFootX + 14, y2: frontFootY, color: accentColor };
+        } else if (st === 'roundhouse' || st === 'highRoundhouse') {
+          const isHigh = st === 'highRoundhouse';
+          torsoX = -20 * kp;
+          frontKneeX = 36 * kp + 16 * (1 - kp);
+          frontKneeY = (isHigh ? -84 : -64) * kp - 26 * (1 - kp);
+          frontFootX = 78 * kp + 22 * (1 - kp);
+          frontFootY = (isHigh ? -108 : -72) * kp;
+          if (kp > 0.25) trail = { kind: 'arc', cx: 10, cy: isHigh ? -82 : -62, r: 68, a1: -Math.PI * 0.45, a2: Math.PI * 0.15, color: accentColor };
+        } else if (st === 'side' || st === 'jumpSide') {
+          torsoX = -28 * kp;
+          frontKneeX = 36 * kp + 16 * (1 - kp);
+          frontKneeY = -62 * kp - 26 * (1 - kp);
+          frontFootX = 84 * kp + 22 * (1 - kp);
+          frontFootY = -64 * kp;
+          if (st === 'jumpSide') { backKneeX = -10; backKneeY = -36; backFootX = -18; backFootY = -16; }
+          if (kp > 0.25) trail = { kind: 'line', x1: 8, y1: -62, x2: frontFootX + 16, y2: frontFootY, color: accentColor };
+        } else if (st === 'axe') {
+          torsoX = -16 * kp;
+          const chop = p < 0.45 ? (p / 0.45) : Math.max(0, 1 - (p - 0.45) / 0.55);
+          frontKneeX = 30 * chop + 16 * (1 - chop);
+          frontKneeY = (p < 0.45 ? -94 : -68) * chop - 26 * (1 - chop);
+          frontFootX = 62 * chop + 22 * (1 - chop);
+          frontFootY = (p < 0.45 ? -132 : -64) * chop;
+          if (kp > 0.25) trail = { kind: 'arc', cx: 14, cy: -74, r: 68, a1: -Math.PI * 0.65, a2: 0.08, color: '#facc15' };
+        } else if (st === 'insideCrescent' || st === 'outsideCrescent') {
+          torsoX = -16 * kp;
+          frontKneeX = 34 * kp + 16 * (1 - kp);
+          frontKneeY = -82 * kp - 26 * (1 - kp);
+          frontFootX = 68 * kp + 22 * (1 - kp);
+          frontFootY = -106 * kp;
+          if (kp > 0.25) {
+            trail = {
+              kind: 'arc',
+              cx: 12,
+              cy: -76,
+              r: 68,
+              a1: st === 'insideCrescent' ? -Math.PI * 0.72 : -Math.PI * 0.35,
+              a2: st === 'insideCrescent' ? 0.1 : Math.PI * 0.35,
+              color: '#facc15'
+            };
+          }
+        } else if (st === 'push') {
+          torsoX = -22 * kp;
+          frontKneeX = 38 * kp + 16 * (1 - kp);
+          frontKneeY = -62 * kp - 26 * (1 - kp);
+          frontFootX = 82 * kp + 22 * (1 - kp);
+          frontFootY = -62 * kp;
+          if (kp > 0.25) trail = { kind: 'push', x: frontFootX + 6, y: frontFootY, color: '#f97316' };
+        } else if (st === 'back' || st === 'jumpBack') {
+          torsoX = 24 * kp;
+          frontKneeX = -34 * kp - 10 * (1 - kp);
+          frontKneeY = -62 * kp - 26 * (1 - kp);
+          frontFootX = -82 * kp - 16 * (1 - kp);
+          frontFootY = -64 * kp;
+          if (kp > 0.25) trail = { kind: 'line', x1: -8, y1: -62, x2: frontFootX - 16, y2: frontFootY, color: accentColor };
+        } else if (st === 'spin360Back') {
+          backKneeX = -8; backKneeY = -36; backFootX = -16; backFootY = -16;
+          if (p < 0.42) {
+            torsoX = 6;
+            frontKneeX = 18; frontKneeY = -44;
+            frontFootX = 10; frontFootY = -22;
+            trail = { kind: 'spiralRings', cx: 0, cy: -62, c1: '#dc2626', c2: '#111827', c3: '#ffd53d' };
+          } else {
+            const tp = Math.sin(Math.min(1, (p - 0.42) / 0.52) * Math.PI);
+            torsoX = 26 * tp;
+            frontKneeX = -38 * tp - 10 * (1 - tp);
+            frontKneeY = -64 * tp - 26 * (1 - tp);
+            frontFootX = -88 * tp - 16 * (1 - tp);
+            frontFootY = -66 * tp;
+            if (tp > 0.2) {
+              trail = { kind: 'shockBack', x1: -8, y1: -64, x2: frontFootX - 16, y2: frontFootY, c1: '#dc2626', c2: '#ffd53d' };
+            }
+          }
+        } else if (st === 'counterRoundhouse') {
+          if (p < 0.30) {
+            const dp = Math.sin((p / 0.30) * Math.PI * 0.5);
+            torsoX = -18 * dp;
+            torsoY = -95;
+            frontHandX = 24; frontHandY = -88;
+            backHandX = 10; backHandY = -80;
+          } else {
+            const cp = Math.sin(Math.min(1, (p - 0.30) / 0.65) * Math.PI);
+            torsoX = -22 * cp;
+            frontKneeX = 38 * cp + 16 * (1 - cp);
+            frontKneeY = -74 * cp - 26 * (1 - cp);
+            frontFootX = 84 * cp + 22 * (1 - cp);
+            frontFootY = -88 * cp;
+            if (cp > 0.2) {
+              trail = { kind: 'doubleArc', cx: 10, cy: -76, r: 72, c1: '#dc2626', c2: '#ffd53d' };
+            }
+          }
+        } else if (st === 'spin360Hook') {
+          // BROWN BELT: High airborne 360° spin with bronze & amber-gold spiral rings -> head-level sweeping hook arc + golden shockwave
+          backKneeX = -10; backKneeY = -38; backFootX = -18; backFootY = -18;
+          if (p < 0.42) {
+            torsoX = -6;
+            frontKneeX = 20; frontKneeY = -48;
+            frontFootX = 12; frontFootY = -24;
+            trail = { kind: 'spiralRings', cx: 0, cy: -64, c1: '#78350f', c2: '#d97706', c3: '#fde047' };
+          } else {
+            const hp = Math.sin(Math.min(1, (p - 0.42) / 0.52) * Math.PI);
+            torsoX = -24 * hp;
+            frontKneeX = 36 * hp + 16 * (1 - hp);
+            frontKneeY = -86 * hp - 26 * (1 - hp);
+            frontFootX = 84 * hp + 22 * (1 - hp);
+            frontFootY = -110 * hp;
+            if (hp > 0.2) {
+              trail = { kind: 'hookShock', cx: 10, cy: -86, r: 74, fx: frontFootX + 6, fy: frontFootY, c1: '#92400e', c2: '#f59e0b', c3: '#fef08a' };
+            }
+          }
+        } else if (st === 'jumpFrontAxeCombo') {
+          // BROWN BELT: Airborne rising front snap kick (part 1, amber flash) -> crushing overhead downward axe chop (part 2, bronze/gold trail)
+          backKneeX = -8; backKneeY = -36; backFootX = -16; backFootY = -16;
+          if (p < 0.44) {
+            const fp = Math.sin((p / 0.44) * Math.PI);
+            torsoX = -14 * fp;
+            frontKneeX = 38 * fp + 16 * (1 - fp);
+            frontKneeY = -66 * fp - 26 * (1 - fp);
+            frontFootX = 80 * fp + 22 * (1 - fp);
+            frontFootY = -72 * fp;
+            if (fp > 0.2) {
+              trail = { kind: 'line', x1: 12, y1: -60, x2: frontFootX + 16, y2: frontFootY, color: '#f59e0b' };
+            }
+          } else {
+            const ap = (p - 0.44) / 0.56;
+            const chop = ap < 0.42 ? (ap / 0.42) : Math.max(0, 1 - (ap - 0.42) / 0.58);
+            torsoX = -18 * chop;
+            frontKneeX = 32 * chop + 16 * (1 - chop);
+            frontKneeY = (ap < 0.42 ? -96 : -66) * chop - 26 * (1 - chop);
+            frontFootX = 68 * chop + 22 * (1 - chop);
+            frontFootY = (ap < 0.42 ? -136 : -60) * chop;
+            if (chop > 0.18) {
+              trail = { kind: 'axeCrash', cx: 14, cy: -74, r: 74, c1: '#78350f', c2: '#f59e0b', c3: '#fef08a' };
+            }
+          }
+        } else if (st === 'backwardsButterfly') {
+          // BROWN BELT: Reverse-direction airborne 360° butterfly spin with twin swirling bronze & gold energy ribbons
+          torsoX = -18 * kp;
+          backKneeX = -16; backKneeY = -44; backFootX = -26; backFootY = -20;
+          frontKneeX = 34 * kp + 16 * (1 - kp);
+          frontKneeY = -80 * kp - 26 * (1 - kp);
+          frontFootX = 80 * kp + 22 * (1 - kp);
+          frontFootY = -98 * kp;
+          if (kp > 0.18) {
+            trail = { kind: 'bronzeRibbons', cx: 4, cy: -70, r: 68, phase: p };
+          }
+        } else if (st === 'spinHook' || st === 'jumpSpinHook' || st === 'butterfly') {
+          torsoX = -20 * kp;
+          frontKneeX = 34 * kp + 16 * (1 - kp);
+          frontKneeY = -82 * kp - 26 * (1 - kp);
+          frontFootX = 78 * kp + 22 * (1 - kp);
+          frontFootY = -104 * kp;
+          if (st === 'jumpSpinHook' || st === 'butterfly') { backKneeX = -10; backKneeY = -38; backFootX = -18; backFootY = -18; }
+          if (kp > 0.22) trail = { kind: 'doubleArc', cx: 10, cy: -82, r: 66, c1: accentColor, c2: '#38bdf8' };
+        } else if (st === 'doubleRoundhouse' || st === 'lowHighDouble') {
+          const h1 = p < 0.48 ? Math.sin((p / 0.48) * Math.PI) : 0;
+          const h2 = p >= 0.44 ? Math.sin(Math.min(1, (p - 0.44) / 0.50) * Math.PI) : 0;
+          const best = Math.max(h1, h2);
+          const isSecond = h2 > h1;
+          torsoX = -22 * best;
+          frontKneeX = 36 * best + 16 * (1 - best);
+          frontKneeY = (isSecond ? -86 : -56) * best - 26 * (1 - best);
+          frontFootX = 80 * best + 22 * (1 - best);
+          frontFootY = (isSecond ? -108 : -54) * best;
+          if (best > 0.22) trail = { kind: 'doubleArc', cx: 10, cy: -74, r: 68, c1: accentColor, c2: '#38bdf8' };
+        } else if (isSkip) {
+          const skipP = p < 0.28 ? Math.sin((p / 0.28) * Math.PI) : 0;
+          const k2 = p >= 0.24 ? Math.sin(Math.min(1, (p - 0.24) / 0.70) * Math.PI) : 0;
+          const isBackPhase = (st === 'skipSideBackCombo' && p >= 0.52);
+          if (isBackPhase) {
+            const bp = Math.sin(Math.min(1, (p - 0.52) / 0.44) * Math.PI);
+            torsoX = 24 * bp;
+            frontKneeX = -34 * bp - 10 * (1 - bp);
+            frontKneeY = -62 * bp - 26 * (1 - bp);
+            frontFootX = -82 * bp - 16 * (1 - bp);
+            frontFootY = -64 * bp;
+            if (bp > 0.22) trail = { kind: 'line', x1: -8, y1: -62, x2: frontFootX - 16, y2: frontFootY, color: '#dc2626' };
+          } else {
+            const highFoot = (st === 'skipAxe' || st === 'skipHook' || st === 'skipDoubleRoundhouse' || st === 'skipLowHighDouble');
+            torsoX = 8 * skipP - 24 * k2;
+            frontKneeX = 24 * skipP + 36 * k2 + 16 * (1 - Math.max(skipP, k2));
+            frontKneeY = -44 * skipP + (highFoot ? -82 : -62) * k2 - 26 * (1 - Math.max(skipP, k2));
+            frontFootX = 22 * skipP + 80 * k2 + 22 * (1 - Math.max(skipP, k2));
+            frontFootY = -16 * skipP + (highFoot ? -104 : -66) * k2;
+            if (Math.max(skipP, k2) > 0.22) {
+              trail = {
+                kind: 'skip',
+                dashColor: accentColor,
+                kickActive: k2 > 0.24,
+                isDouble: (st === 'skipDoubleRoundhouse' || st === 'skipLowHighDouble'),
+                cx: 10,
+                cy: highFoot ? -80 : -64,
+                r: 68,
+                c1: accentColor,
+                c2: '#fb923c'
+              };
+            }
+          }
+        } else if (st === 'sideBackCombo') {
+          const s1 = p < 0.46 ? Math.sin((p / 0.46) * Math.PI) : 0;
+          const b2 = p >= 0.44 ? Math.sin(Math.min(1, (p - 0.44) / 0.52) * Math.PI) : 0;
+          if (s1 >= b2) {
+            torsoX = -26 * s1;
+            frontKneeX = 36 * s1 + 16 * (1 - s1);
+            frontKneeY = -62 * s1 - 26 * (1 - s1);
+            frontFootX = 82 * s1 + 22 * (1 - s1);
+            frontFootY = -64 * s1;
+            if (s1 > 0.24) trail = { kind: 'line', x1: 8, y1: -62, x2: frontFootX + 14, y2: frontFootY, color: '#fb923c' };
+          } else {
+            torsoX = 24 * b2;
+            frontKneeX = -34 * b2 - 10 * (1 - b2);
+            frontKneeY = -62 * b2 - 26 * (1 - b2);
+            frontFootX = -82 * b2 - 16 * (1 - b2);
+            frontFootY = -64 * b2;
+            if (b2 > 0.24) trail = { kind: 'line', x1: -8, y1: -62, x2: frontFootX - 16, y2: frontFootY, color: '#dc2626' };
+          }
+        }
+
+        // Render motion trail behind the kicking limb
+        if (trail) {
+          ctx.save();
+          ctx.lineCap = 'round';
+          if (trail.kind === 'arc') {
+            ctx.strokeStyle = trail.color;
+            ctx.lineWidth = 10;
+            ctx.globalAlpha = 0.74;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r, trail.a1, trail.a2);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r - 7, trail.a1 + 0.1, trail.a2 - 0.1);
+            ctx.stroke();
+          } else if (trail.kind === 'doubleArc') {
+            ctx.globalAlpha = 0.82;
+            ctx.strokeStyle = trail.c1;
+            ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy + 12, trail.r - 4, -Math.PI * 0.35, Math.PI * 0.2);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy - 12, trail.r + 3, -Math.PI * 0.6, Math.PI * 0.05);
+            ctx.stroke();
+          } else if (trail.kind === 'line') {
+            ctx.globalAlpha = 0.82;
+            ctx.strokeStyle = trail.color;
+            ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.moveTo(trail.x1, trail.y1);
+            ctx.lineTo(trail.x2, trail.y2);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(trail.x1, trail.y1);
+            ctx.lineTo(trail.x2, trail.y2);
+            ctx.stroke();
+          } else if (trail.kind === 'push') {
+            ctx.globalAlpha = 0.82;
+            ctx.strokeStyle = trail.color;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.ellipse(trail.x, trail.y, 12, 26, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.ellipse(trail.x + 8, trail.y, 7, 16, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (trail.kind === 'spiralRings') {
+            ctx.globalAlpha = 0.86;
+            ctx.strokeStyle = trail.c1;
+            ctx.lineWidth = 6.5;
+            ctx.beginPath();
+            ctx.ellipse(trail.cx, trail.cy - 16, 44, 12, 0.16, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 5.5;
+            ctx.beginPath();
+            ctx.ellipse(trail.cx, trail.cy + 4, 48, 13, -0.16, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c3;
+            ctx.lineWidth = 2.8;
+            ctx.beginPath();
+            ctx.ellipse(trail.cx, trail.cy + 22, 36, 10, 0.12, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (trail.kind === 'shockBack') {
+            ctx.globalAlpha = 0.88;
+            ctx.strokeStyle = trail.c1;
+            ctx.lineWidth = 11;
+            ctx.beginPath();
+            ctx.moveTo(trail.x1, trail.y1);
+            ctx.lineTo(trail.x2, trail.y2);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(trail.x1, trail.y1);
+            ctx.lineTo(trail.x2, trail.y2);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+            ctx.ellipse(trail.x2 - 4, trail.y2, 12, 28, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (trail.kind === 'hookShock') {
+            ctx.globalAlpha = 0.86;
+            ctx.strokeStyle = trail.c1;
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r, -Math.PI * 0.62, Math.PI * 0.12);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r - 5, -Math.PI * 0.56, Math.PI * 0.08);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c3;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.ellipse(trail.fx, trail.fy, 13, 24, -0.25, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (trail.kind === 'axeCrash') {
+            ctx.globalAlpha = 0.88;
+            ctx.strokeStyle = trail.c1;
+            ctx.lineWidth = 13;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r, -Math.PI * 0.72, 0.14);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c2;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r - 6, -Math.PI * 0.68, 0.1);
+            ctx.stroke();
+            ctx.strokeStyle = trail.c3;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r - 12, -Math.PI * 0.6, 0.06);
+            ctx.stroke();
+          } else if (trail.kind === 'bronzeRibbons') {
+            ctx.globalAlpha = 0.85;
+            const rot = -trail.phase * Math.PI * 2;
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy, trail.r, rot, rot + Math.PI * 0.95);
+            ctx.stroke();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy - 8, trail.r - 8, rot + Math.PI, rot + Math.PI * 1.9);
+            ctx.stroke();
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(trail.cx, trail.cy + 6, trail.r - 16, rot + 0.4, rot + Math.PI * 1.25);
+            ctx.stroke();
+          } else if (trail.kind === 'skip') {
+            ctx.strokeStyle = trail.dashColor;
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.78;
+            for (let d = 0; d < 3; d++) {
+              const dy = -26 - d * 24;
+              ctx.beginPath();
+              ctx.moveTo(-58 - d * 8, dy);
+              ctx.lineTo(-22, dy);
+              ctx.stroke();
+            }
+            if (trail.kickActive) {
+              ctx.strokeStyle = trail.c1;
+              ctx.lineWidth = 10;
+              ctx.beginPath();
+              ctx.arc(trail.cx, trail.cy, trail.r, -Math.PI * 0.52, Math.PI * 0.14);
+              ctx.stroke();
+              if (trail.isDouble) {
+                ctx.strokeStyle = trail.c2;
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.arc(trail.cx, trail.cy + 16, trail.r - 6, -Math.PI * 0.25, Math.PI * 0.24);
+                ctx.stroke();
+              }
+            }
+          }
+          ctx.restore();
+        }
+
+        const flashing = f.flashTime > 0 && Math.floor(f.flashTime * 30) % 2 === 0;
+        const dobokMain = flashing ? '#ffffff' : (isWhite ? '#f8fafc' : '#18181b');
+        const dobokShade = flashing ? '#e2e8f0' : (isWhite ? '#cbd5e1' : '#27272a');
+        const skinColor = flashing ? '#ffffff' : '#f1c29b';
+        const collarColor = isWhite ? '#0f172a' : '#dc2626';
+
+        // Back leg
+        drawLimb(hipX - 4, hipY, backKneeX, backKneeY, 13, dobokShade);
+        drawLimb(backKneeX, backKneeY, backFootX, backFootY - 4, 11, dobokShade);
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.ellipse(backFootX + 3, backFootY - 3, 7, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Back arm
+        drawLimb(torsoX - 4, torsoY + 12, backHandX - 8, backHandY + 4, 10, dobokShade);
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.arc(backHandX, backHandY, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Torso (Dobok jacket)
+        ctx.fillStyle = dobokMain;
+        ctx.strokeStyle = isWhite ? '#94a3b8' : '#52525b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(torsoX - 15, torsoY + 4);
+        ctx.lineTo(torsoX + 15, torsoY + 4);
+        ctx.lineTo(hipX + 13, hipY + 4);
+        ctx.lineTo(hipX - 13, hipY + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // V-neck collar (with gold accent for black dobok rival)
+        ctx.strokeStyle = collarColor;
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.moveTo(torsoX - 7, torsoY + 5);
+        ctx.lineTo(torsoX + 3, torsoY + 22);
+        ctx.lineTo(torsoX + 10, torsoY + 5);
+        ctx.stroke();
+
+        // Waist belt (supports High Red black center stripe & Brown amber-gold trim)
+        ctx.fillStyle = f.beltColor;
+        ctx.strokeStyle = f.beltBorder;
+        ctx.lineWidth = 1.6;
+        ctx.fillRect(hipX - 14, hipY - 5, 28, 8);
+        if (f.stripeColor) {
+          ctx.fillStyle = f.stripeColor;
+          ctx.fillRect(hipX - 14, hipY - 2.4, 28, 2.8);
+        }
+        ctx.strokeRect(hipX - 14, hipY - 5, 28, 8);
+
+        // Hanging belt tail
+        ctx.fillStyle = f.beltColor;
+        ctx.beginPath();
+        ctx.moveTo(hipX + 4, hipY + 3);
+        ctx.lineTo(hipX + 12, hipY + 18);
+        ctx.lineTo(hipX + 7, hipY + 19);
+        ctx.lineTo(hipX, hipY + 3);
+        ctx.fill();
+        if (f.stripeColor) {
+          ctx.strokeStyle = f.stripeColor;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(hipX + 2.5, hipY + 3);
+          ctx.lineTo(hipX + 9.5, hipY + 18.5);
+          ctx.stroke();
+        }
+
+        // Front leg
+        drawLimb(hipX + 4, hipY, frontKneeX, frontKneeY, 13.5, dobokMain);
+        drawLimb(frontKneeX, frontKneeY, frontFootX, frontFootY - 4, 11.5, dobokMain);
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.ellipse(frontFootX + 3, frontFootY - 3, 7.5, 4.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head & matching belt headband
+        const headX = torsoX + 2;
+        const headY = torsoY - 11;
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.arc(headX, headY, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(headX - 1, headY - 3, 13, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.fill();
+
+        ctx.fillStyle = isWhite ? f.beltColor : '#dc2626';
+        ctx.fillRect(headX - 12, headY - 7, 24, 4.5);
+        if (isWhite && f.stripeColor) {
+          ctx.fillStyle = f.stripeColor;
+          ctx.fillRect(headX - 12, headY - 5.5, 24, 1.6);
+        } else if (isWhite && f.beltColor === '#78350f') {
+          ctx.fillStyle = '#d97706';
+          ctx.fillRect(headX - 12, headY - 3.6, 24, 1.1);
+        }
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(headX + 6, headY - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Front arm
+        drawLimb(torsoX + 4, torsoY + 12, frontHandX - 6, frontHandY + 6, 10.5, dobokMain);
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.arc(frontHandX, frontHandY, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawSparksAndPopups(w, h) {
+        for (let i = 0; i < arena.sparks.length; i++) {
+          const s = arena.sparks[i];
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, s.life / s.maxLife);
+          ctx.fillStyle = s.color;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        for (let i = 0; i < arena.popups.length; i++) {
+          const pop = arena.popups[i];
+          const a = Math.min(1, (pop.life / pop.maxLife) * 1.5);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, a);
+          ctx.textAlign = 'center';
+          ctx.font = '900 22px system-ui, sans-serif';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+          const py = h * 0.24 - pop.yOffset;
+          ctx.strokeText(pop.title, w * 0.5, py);
+          ctx.fillStyle = pop.color;
+          ctx.fillText(pop.title, w * 0.5, py);
+          if (pop.subtitle) {
+            ctx.font = '800 12.5px system-ui, sans-serif';
+            ctx.strokeText(pop.subtitle, w * 0.5, py + 18);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(pop.subtitle, w * 0.5, py + 18);
+          }
+          ctx.restore();
+        }
+      }
+
+      function updateFighterState(f, dt) {
+        if (f.flashTime > 0) f.flashTime = Math.max(0, f.flashTime - dt);
+        if (f.state !== 'neutral' && f.state !== 'idle') {
+          f.stateTime += dt;
+          if (f.stateTime >= f.stateDuration) {
+            f.state = 'idle';
+            f.stateTime = 0;
+          }
+        }
+      }
+
+      let lastFrameTime = 0;
+      function animateLoop(ts) {
+        if (!lastFrameTime) lastFrameTime = ts;
+        const dt = Math.min(0.05, (ts - lastFrameTime) / 1000);
+        lastFrameTime = ts;
+
+        if (game.screen === 'battle') {
+          arena.elapsed += dt;
+          if (arena.shakeTime > 0) arena.shakeTime = Math.max(0, arena.shakeTime - dt);
+          if (arena.auraTime > 0) arena.auraTime = Math.max(0, arena.auraTime - dt);
+          if (arena.counterAuraTime > 0) arena.counterAuraTime = Math.max(0, arena.counterAuraTime - dt);
+
+          updateFighterState(arena.player, dt);
+          updateFighterState(arena.opponent, dt);
+
+          for (let i = arena.sparks.length - 1; i >= 0; i--) {
+            const s = arena.sparks[i];
+            s.x += s.vx * dt;
+            s.y += s.vy * dt;
+            s.vy += 260 * dt;
+            s.life -= dt;
+            if (s.life <= 0) arena.sparks.splice(i, 1);
+          }
+
+          for (let i = arena.popups.length - 1; i >= 0; i--) {
+            const pop = arena.popups[i];
+            pop.yOffset += 26 * dt;
+            pop.life -= dt;
+            if (pop.life <= 0) arena.popups.splice(i, 1);
+          }
+
+          const w = arena.w;
+          const h = arena.h;
+          ctx.save();
+          if (arena.shakeTime > 0) {
+            const sx = (Math.random() - 0.5) * 2 * arena.shakeMag;
+            const sy = (Math.random() - 0.5) * 2 * arena.shakeMag;
+            ctx.translate(sx, sy);
+          }
+
+          drawDojang(w, h);
+          drawFighter(arena.opponent, w, h);
+          drawFighter(arena.player, w, h);
+          drawSparksAndPopups(w, h);
+
+          ctx.restore();
+        }
+
+        window.requestAnimationFrame(animateLoop);
+      }
+
+      /* =======================================================================
+         8. UI HELPERS & SCREEN TRANSITIONS
+         ======================================================================= */
+      function syncMuteButtons() {
+        const label = SoundFX.muted ? 'Sound: OFF' : 'Sound: ON';
+        btnMuteTitle.textContent = label;
+        btnMuteBattle.textContent = label;
+      }
+
+      function toggleMute() {
+        SoundFX.muted = !SoundFX.muted;
+        syncMuteButtons();
+        if (!SoundFX.muted) SoundFX.ensureCtx();
+      }
+
+      function showScreen(name) {
+        clearAllTimers();
+        game.screen = name;
+        titleScreen.classList.toggle('active', name === 'title');
+        battleScreen.classList.toggle('active', name === 'battle');
+        resultScreen.classList.toggle('active', name === 'result');
+        if (name === 'battle') {
+          resizeCanvas();
+        }
+      }
+
+      function renderBeltGrid() {
+        beltGrid.innerHTML = '';
+        let cumulativeCount = 0;
+
+        for (let i = 0; i < BELTS.length; i++) {
+          const b = BELTS[i];
+          cumulativeCount += b.terms.length;
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'belt-card' + (b.unlocked ? '' : ' locked');
+          card.disabled = !b.unlocked;
+
+          const swatch = document.createElement('div');
+          swatch.className = 'belt-swatch' + (b.stripeColor ? ' striped' : '');
+          swatch.style.backgroundColor = b.color;
+          swatch.style.border = '2px solid ' + b.border;
+
+          const nameEl = document.createElement('div');
+          nameEl.className = 'belt-name';
+          nameEl.textContent = b.name;
+
+          const metaEl = document.createElement('div');
+          metaEl.className = 'belt-meta';
+          metaEl.textContent = b.unlocked
+            ? (cumulativeCount + ' terms \u2022 ' + b.hitsToWin + ' hits')
+            : 'Master Level';
+
+          const badge = document.createElement('span');
+          badge.className = 'belt-badge';
+          badge.textContent = b.unlocked ? 'Fight' : 'Coming Soon';
+
+          card.appendChild(swatch);
+          card.appendChild(nameEl);
+          card.appendChild(metaEl);
+          card.appendChild(badge);
+
+          if (b.unlocked) {
+            (function (idx) {
+              card.addEventListener('click', function () {
+                SoundFX.ensureCtx();
+                startMatch(idx);
+              });
+            })(i);
+          }
+
+          beltGrid.appendChild(card);
+        }
+      }
+
+      function updateHud() {
+        const pPct = Math.max(0, (game.playerHp / game.playerMaxHp) * 100);
+        const oPct = Math.max(0, (game.opponentHp / game.opponentMaxHp) * 100);
+        playerHpFill.style.width = pPct + '%';
+        opponentHpFill.style.width = oPct + '%';
+        playerHpText.textContent = game.playerHp + '/' + game.playerMaxHp;
+        opponentHpText.textContent = game.opponentHp + '/' + game.opponentMaxHp;
+
+        comboPill.textContent = 'Combo: ' + game.combo;
+        comboPill.classList.toggle('hot', game.combo >= 3);
+      }
+
+      /* =======================================================================
+         9. MATCH FLOW & CUMULATIVE QUIZ ENGINE
+         ======================================================================= */
+      function shuffleArray(arr) {
+        const copy = arr.slice();
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = copy[i];
+          copy[i] = copy[j];
+          copy[j] = tmp;
+        }
+        return copy;
+      }
+
+      function startMatch(beltIndex) {
+        clearAllTimers();
+        const belt = BELTS[beltIndex];
+        game.beltIndex = beltIndex;
+        game.pool = getCumulativeTerms(beltIndex);
+        game.kickPool = game.pool.filter(function (t) { return !t.isStance; });
+        game.currentBeltKicks = game.kickPool.filter(function (t) { return t.beltIndex === beltIndex; });
+        game.lowerBeltKicks = game.kickPool.filter(function (t) { return t.beltIndex < beltIndex; });
+
+        game.stanceLocked = false;
+        game.lastKickEnglish = '';
+        game.lockedInput = false;
+        game.playerMaxHp = belt.playerHp;
+        game.playerHp = belt.playerHp;
+        game.opponentMaxHp = belt.hitsToWin;
+        game.opponentHp = belt.hitsToWin;
+        game.hitsLanded = 0;
+        game.totalAnswered = 0;
+        game.totalCorrect = 0;
+        game.combo = 0;
+        game.bestCombo = 0;
+        game.missedMap = {};
+
+        // Update HUD belt badge and fighter belt visuals
+        playerBeltTag.textContent = belt.shortName;
+        if (belt.stripeColor) {
+          playerBeltTag.style.background = 'linear-gradient(180deg, #dc2626 0%, #dc2626 36%, #111827 36%, #111827 64%, #dc2626 64%, #dc2626 100%)';
+        } else {
+          playerBeltTag.style.background = belt.color;
+        }
+        playerBeltTag.style.color = belt.textColor;
+        playerBeltTag.style.borderColor = belt.border;
+
+        arena.player.beltColor = belt.color;
+        arena.player.beltBorder = belt.border;
+        arena.player.stripeColor = belt.stripeColor;
+        arena.player.state = 'neutral';
+        arena.player.stateTime = 0;
+        arena.player.flashTime = 0;
+        arena.opponent.state = 'idle';
+        arena.opponent.stateTime = 0;
+        arena.opponent.flashTime = 0;
+        arena.sparks = [];
+        arena.popups = [];
+        arena.auraTime = 0;
+        arena.counterAuraTime = 0;
+
+        showScreen('battle');
+        updateHud();
+        presentNextTurn();
+      }
+
+      function pickNextTerm() {
+        // Every fight always starts with Fighting Stance until answered correctly
+        if (!game.stanceLocked) {
+          for (let i = 0; i < game.pool.length; i++) {
+            if (game.pool[i].isStance) return game.pool[i];
+          }
+        }
+
+        // Weight ~50% toward current belt's new terms while drilling all lower belts
+        let source = game.kickPool;
+        if (game.currentBeltKicks.length > 0 && game.lowerBeltKicks.length > 0) {
+          source = Math.random() < 0.50 ? game.currentBeltKicks : game.lowerBeltKicks;
+        }
+
+        // Never repeat the exact same kick twice in a row
+        let candidates = source.filter(function (t) { return t.english !== game.lastKickEnglish; });
+        if (candidates.length === 0) {
+          candidates = game.kickPool.filter(function (t) { return t.english !== game.lastKickEnglish; });
+        }
+        if (candidates.length === 0) candidates = game.kickPool;
+
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        game.lastKickEnglish = chosen.english;
+        return chosen;
+      }
+
+      function buildChoices(correctTerm) {
+        const distractors = shuffleArray(
+          game.pool.filter(function (t) { return t.korean !== correctTerm.korean; })
+        );
+        const choices = [correctTerm];
+        for (let i = 0; i < distractors.length && choices.length < 4; i++) {
+          choices.push(distractors[i]);
+        }
+        return shuffleArray(choices);
+      }
+
+      function presentNextTurn() {
+        game.lockedInput = false;
+        const term = pickNextTerm();
+        game.currentTerm = term;
+
+        promptKicker.textContent = term.isStance
+          ? 'Step 1 \u2022 Take Your Fighting Stance'
+          : 'Select the Korean Term to Strike';
+        promptMove.textContent = term.english;
+
+        const choices = buildChoices(term);
+        choicesGrid.innerHTML = '';
+
+        for (let i = 0; i < choices.length; i++) {
+          const item = choices[i];
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'choice-btn' + (item.korean.length > 26 ? ' long-text' : '');
+          btn.textContent = item.korean;
+          btn.setAttribute('data-korean', item.korean);
+
+          (function (selectedItem, buttonEl) {
+            btn.addEventListener('click', function () {
+              handleAnswer(selectedItem, buttonEl);
+            });
+          })(item, btn);
+
+          choicesGrid.appendChild(btn);
+        }
+      }
+
+      function handleAnswer(selectedItem, clickedBtn) {
+        if (game.lockedInput) return;
+        game.lockedInput = true;
+        SoundFX.ensureCtx();
+
+        const target = game.currentTerm;
+        const isCorrect = selectedItem.korean === target.korean;
+        game.totalAnswered += 1;
+
+        const allBtns = choicesGrid.querySelectorAll('.choice-btn');
+        for (let i = 0; i < allBtns.length; i++) {
+          allBtns[i].disabled = true;
+          if (allBtns[i].getAttribute('data-korean') === target.korean) {
+            allBtns[i].classList.add('correct');
+          }
+        }
+
+        if (isCorrect) {
+          game.totalCorrect += 1;
+          game.combo += 1;
+          if (game.combo > game.bestCombo) game.bestCombo = game.combo;
+          updateHud();
+
+          if (target.isStance) {
+            game.stanceLocked = true;
+            triggerStanceAnimation();
+            schedule(function () {
+              presentNextTurn();
+            }, 820);
+          } else {
+            triggerKickAnimation('left', target.anim, target.doubleHit, target.korean, function () {
+              game.hitsLanded += 1;
+              game.opponentHp = Math.max(0, game.opponentHp - 1);
+              updateHud();
+            });
+            const isExtended = (
+              target.anim === 'spin360Back' ||
+              target.anim === 'counterRoundhouse' ||
+              target.anim === 'spin360Hook' ||
+              target.anim === 'backwardsButterfly'
+            );
+            const waitMs = target.doubleHit ? 1060 : (isExtended ? 990 : 880);
+            schedule(function () {
+              if (game.opponentHp <= 0) {
+                endMatch(true);
+              } else {
+                presentNextTurn();
+              }
+            }, waitMs);
+          }
+        } else {
+          clickedBtn.classList.add('wrong');
+          game.combo = 0;
+          game.missedMap[target.english] = target.korean;
+          updateHud();
+
+          const rivalAnims = ['frontSnap', 'roundhouse', 'side', 'highRoundhouse', 'back'];
+          const rivalAnim = rivalAnims[Math.floor(Math.random() * rivalAnims.length)];
+
+          triggerKickAnimation('right', rivalAnim, false, 'Answer: ' + target.korean, function () {
+            game.playerHp = Math.max(0, game.playerHp - 1);
+            updateHud();
+          });
+
+          schedule(function () {
+            if (game.playerHp <= 0) {
+              endMatch(false);
+            } else {
+              presentNextTurn();
+            }
+          }, 1180);
+        }
+      }
+
+      /* =======================================================================
+         10. END-OF-MATCH REVIEW SCREEN
+         ======================================================================= */
+      function endMatch(isVictory) {
+        const belt = BELTS[game.beltIndex];
+        const accuracy = game.totalAnswered > 0
+          ? Math.round((game.totalCorrect / game.totalAnswered) * 100)
+          : 100;
+
+        if (isVictory) {
+          SoundFX.victory();
+          resultBanner.className = 'result-banner victory';
+          resultTitle.textContent = 'VICTORY!';
+          resultSub.textContent = 'You conquered ' + belt.name + ' sparring!';
+        } else {
+          SoundFX.defeat();
+          resultBanner.className = 'result-banner defeat';
+          resultTitle.textContent = 'KEEP TRAINING!';
+          resultSub.textContent = 'Review your missed ' + belt.name + ' terms and try again!';
+        }
+
+        const isFlawless = isVictory && accuracy === 100;
+        flawlessBadge.classList.toggle('show', isFlawless);
+
+        statAccuracy.textContent = accuracy + '%';
+        statHits.textContent = String(game.hitsLanded);
+        statCombo.textContent = String(game.bestCombo);
+
+        const missedKeys = Object.keys(game.missedMap);
+        reviewContent.innerHTML = '';
+        if (missedKeys.length === 0) {
+          const perfect = document.createElement('div');
+          perfect.className = 'review-perfect';
+          perfect.textContent = 'Zero missed terms! Your Korean terminology is black-belt sharp!';
+          reviewContent.appendChild(perfect);
+        } else {
+          const ul = document.createElement('ul');
+          ul.className = 'review-list';
+          for (let i = 0; i < missedKeys.length; i++) {
+            const en = missedKeys[i];
+            const kr = game.missedMap[en];
+            const li = document.createElement('li');
+            li.className = 'review-item';
+
+            const enDiv = document.createElement('div');
+            enDiv.className = 'rev-en';
+            enDiv.textContent = en;
+
+            const krDiv = document.createElement('div');
+            krDiv.className = 'rev-kr';
+            krDiv.textContent = '\u2192 ' + kr;
+
+            li.appendChild(enDiv);
+            li.appendChild(krDiv);
+            ul.appendChild(li);
+          }
+          reviewContent.appendChild(ul);
+        }
+
+        const nextBelt = BELTS[game.beltIndex + 1];
+        if (isVictory && nextBelt && nextBelt.unlocked) {
+          btnNextBelt.textContent = 'Next Belt: ' + nextBelt.name;
+          btnNextBelt.classList.remove('hidden');
+        } else {
+          btnNextBelt.classList.add('hidden');
+        }
+
+        showScreen('result');
+      }
+
+      /* =======================================================================
+         11. EVENT LISTENERS & INITIALIZATION
+         ======================================================================= */
+      btnBackBelts.addEventListener('click', function () {
+        showScreen('title');
+      });
+
+      btnMuteTitle.addEventListener('click', toggleMute);
+      btnMuteBattle.addEventListener('click', toggleMute);
+
+      btnRematch.addEventListener('click', function () {
+        SoundFX.ensureCtx();
+        startMatch(game.beltIndex);
+      });
+
+      btnNextBelt.addEventListener('click', function () {
+        SoundFX.ensureCtx();
+        const nextIdx = game.beltIndex + 1;
+        if (BELTS[nextIdx] && BELTS[nextIdx].unlocked) {
+          startMatch(nextIdx);
+        }
+      });
+
+      btnBeltSelect.addEventListener('click', function () {
+        showScreen('title');
+      });
+
+      window.addEventListener('resize', function () {
+        if (game.screen === 'battle') resizeCanvas();
+      });
+
+      window.addEventListener('load', function () {
+        renderBeltGrid();
+        syncMuteButtons();
+        resizeCanvas();
+        window.requestAnimationFrame(animateLoop);
+      });
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
